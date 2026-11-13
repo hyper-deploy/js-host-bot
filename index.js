@@ -4,6 +4,7 @@ const { Telegraf, Markup } = require('telegraf');
 const fs = require('fs');
 const path = require('path');
 const { exec } = require('child_process');
+const http = require('http');
 
 // ==========================================
 // ⚠️ আপনার তথ্য এখানে সেট করা আছে ⚠️
@@ -19,6 +20,16 @@ if (BOT_TOKEN.includes("এখানে") || ADMIN_ID.includes("এখানে"
   process.exit(1);
 }
 
+// --- Render Port Error Fix ---
+const port = process.env.PORT || 10000;
+http.createServer((req, res) => {
+  res.writeHead(200, { 'Content-Type': 'text/plain' });
+  res.end('Bot is running');
+}).listen(port, '0.0.0.0', () => {
+  console.log(`✅ HTTP server listening on port ${port}`);
+});
+// -----------------------------
+
 console.log("3. Bot create kora hocche...");
 const bot = new Telegraf(BOT_TOKEN);
 
@@ -30,7 +41,6 @@ const getMainMenu = () => {
 };
 
 bot.start((ctx) => {
-  console.log("Keu /start diche:", ctx.from.id);
   if (ctx.from.id.toString() !== ADMIN_ID.toString()) {
     return ctx.reply("⛔ Ei bot ta personal. Apni admin na hole eita use korte parben na.");
   }
