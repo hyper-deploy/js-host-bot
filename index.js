@@ -96,8 +96,12 @@ bot.on('document', async (ctx) => {
           pkg = pkg.split('/')[0];
         }
 
-        // কিছু লাইব্রেরির নামে ভুল থাকলে সেটা অটো-ফিক্স করা (যদি প্রয়োজন হয়)
+        // কিছু লাইব্রেরির নামে ভুল থাকলে সেটা অটো-ফিক্স করা
         if (pkg === 'telegram-bot-api') pkg = 'node-telegram-bot-api';
+        
+        // ⚠️ এখানে নির্দিষ্ট ভার্সন 0.66.0 ফিক্স করা হলো
+        if (pkg === 'node-telegram-bot-api') pkg = 'node-telegram-bot-api@0.66.0'; 
+        
         if (pkg === 'ytdl-core') pkg = '@distube/ytdl-core'; // নতুন ও ভালো ভার্সন
         
         packages.add(pkg);
@@ -110,7 +114,6 @@ bot.on('document', async (ctx) => {
     if (packagesToInstall.length > 0) {
       ctx.reply(`📦 Milse ei package gulo: \`${packagesToInstall}\`\nEkhon install korchi... (Ektu somoy lagbe)`, { parse_mode: 'Markdown' });
       
-      // --no-save বাদ দেওয়া হয়েছে যাতে প্যাকেজগুলো ঠিকমতো সেভ হয়
       const installCmd = `cd "${userDir}" && npm install ${packagesToInstall} && `;
       runBot(installCmd, filePath, ctx);
     } else {
@@ -128,14 +131,12 @@ bot.on('document', async (ctx) => {
 function runBot(installCmd, filePath, ctx) {
   const runCmd = `${installCmd}node "${filePath}"`;
   
-  // maxBuffer বাড়িয়ে দেওয়া হয়েছে যাতে বড় এরর মেসেজও ধরা পড়ে
   const child = exec(runCmd, { maxBuffer: 1024 * 1024 * 10 });
 
   let output = "";
   child.stdout.on('data', (data) => { output += data; });
   child.stderr.on('data', (data) => { output += data; });
 
-  // ২০ সেকেন্ড অপেক্ষা করা (ইনস্টল এবং রান হওয়ার জন্য)
   setTimeout(() => {
     if (child.exitCode === null) {
       ctx.replyWithMarkdown(`🎉 **Bot Successfully Run Hoyechhe!**\n\n\`\`\`\n${output.substring(0, 500) || "Bot is running in background..."}\n\`\`\``);
