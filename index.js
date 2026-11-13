@@ -13,8 +13,6 @@ const BOT_TOKEN = "9213115853:AAHVDACnqSSOFXx3iy4KXv6FGhGfxhx82jc";
 const ADMIN_ID = "5428249457"; 
 // ==========================================
 
-console.log("2. Token check kora hocche...");
-
 if (BOT_TOKEN.includes("এখানে") || ADMIN_ID.includes("এখানে")) {
   console.log("❌ ERROR: Bhai apni BOT_TOKEN ba ADMIN_ID thik koren nai!");
   process.exit(1);
@@ -30,7 +28,6 @@ http.createServer((req, res) => {
 });
 // -----------------------------
 
-console.log("3. Bot create kora hocche...");
 const bot = new Telegraf(BOT_TOKEN);
 
 const getMainMenu = () => {
@@ -44,10 +41,7 @@ bot.start((ctx) => {
   if (ctx.from.id.toString() !== ADMIN_ID.toString()) {
     return ctx.reply("⛔ Ei bot ta personal. Apni admin na hole eita use korte parben na.");
   }
-
-  const welcomeMsg = "✨ **Welcome Boss!** ✨\n\nEkhane apni apnar Node.js (`.js`) bot host korte parben.\n👇 Niche theke option select korun:";
-  
-  ctx.replyWithMarkdown(welcomeMsg, getMainMenu());
+  ctx.replyWithMarkdown("✨ **Welcome Boss!** ✨\n\nEkhane apni apnar Node.js (`.js`) bot host korte parben.\n👇 Niche theke option select korun:", getMainMenu());
 });
 
 bot.action('host_new', (ctx) => {
@@ -59,7 +53,7 @@ bot.action('host_new', (ctx) => {
 bot.action('help', (ctx) => {
   if (ctx.from.id.toString() !== ADMIN_ID.toString()) return ctx.answerCbQuery("Access Denied!");
   ctx.answerCbQuery();
-  ctx.replyWithMarkdown("ℹ️ **Help**\n\n1. Apnar `.js` file pathan.\n2. Apnar file er vitore obosshoi apnar Bot Token thakte hobe.");
+  ctx.replyWithMarkdown("ℹ️ **Help**\n\n1. Apnar `.js` file pathan.\n2. Ami file er vitore thaka sob package check kore install korbo.\n3. Tarpor bot run korbo.");
 });
 
 bot.on('document', async (ctx) => {
@@ -82,26 +76,61 @@ bot.on('document', async (ctx) => {
   try {
     ctx.reply(`⏳ File download hocche: \`${fileName}\`...`, { parse_mode: 'Markdown' });
     
+    // ১. ফাইল ডাউনলোড করা
     const fileLink = await ctx.telegram.getFileLink(fileId);
     const response = await fetch(fileLink.href);
     const arrayBuffer = await response.arrayBuffer();
     fs.writeFileSync(filePath, Buffer.from(arrayBuffer));
 
-    ctx.reply("✅ File download shesh! Ekhon bot chalu korchi...");
+    ctx.reply("✅ File download shesh! Ekhon library check kora hocche...");
 
-    const child = exec(`node "${filePath}"`);
+    // ২. ফাইলের ভেতরের require() গুলো খুঁজে বের করা
+    const fileContent = fs.readFileSync(filePath, 'utf8');
+    const requireRegex = /require\(['"]([^'"]+)['"]\)/g;
+    let match;
+    let packages = new Set();
+
+    while ((match = requireRegex.exec(fileContent)) !== null) {
+      let pkg = match[1];
+      // লোকাল ফাইল বা node এর বিল্ট-ইন মডিউল বাদ দেওয়া
+      if (!pkg.startsWith('.') && !pkg.startsWith('/') && !['fs', 'path', 'http', 'https', 'crypto', 'child_process'].includes(pkg)) {
+        // স্কোপড প্যাকেজ (যেমন @distube/ytdl-core) ঠিকভাবে নেওয়া
+        if (pkg.startsWith('@')) {
+          pkg = pkg.split('/').slice(0, 2).join('/');
+        } else {
+          pkg = pkg.split('/')[0];
+        }
+        packages.add(pkg);
+      }
+    }
+
+    // ৩. প্রয়োজনীয় প্যাকেজ ইনস্টল করা
+    const packagesToInstall = Array.from(packages).join(' ');
+    let installCmd = '';
+    
+    if (packagesToInstall.length > 0) {
+      ctx.reply(`📦 Milse ei package gulo: \`${packagesToInstall}\`\nEkhon install korchi...`, { parse_mode: 'Markdown' });
+      installCmd = `cd "${userDir}" && npm install ${packagesToInstall} --no-save && `;
+    } else {
+      ctx.reply("✅ Kono notun package lagbe na. Ekhon bot chalu korchi...");
+    }
+
+    // ৪. বট রান করা
+    const runCmd = `${installCmd}node "${filePath}"`;
+    const child = exec(runCmd, { maxBuffer: 1024 * 1024 * 10 }); // ১০MB বাফার
 
     let output = "";
     child.stdout.on('data', (data) => { output += data; });
     child.stderr.on('data', (data) => { output += data; });
 
+    // ১৫ সেকেন্ড অপেক্ষা করা (ইনস্টল এবং রান হওয়ার জন্য)
     setTimeout(() => {
       if (child.exitCode === null) {
-        ctx.replyWithMarkdown(`🎉 **Bot Successfully Run Hoyechhe!**\n\n\`\`\`\n${output.substring(0, 500) || "Bot is running..."}\n\`\`\``);
+        ctx.replyWithMarkdown(`🎉 **Bot Successfully Run Hoyechhe!**\n\n\`\`\`\n${output.substring(0, 500) || "Bot is running in background..."}\n\`\`\``);
       } else {
         ctx.replyWithMarkdown(`❌ **Bot Crash Koreche!**\n\nError Log:\n\`\`\`\n${output.substring(0, 1000)}\n\`\`\``);
       }
-    }, 5000);
+    }, 15000);
 
   } catch (error) {
     console.error("File Error:", error);
@@ -109,10 +138,10 @@ bot.on('document', async (ctx) => {
   }
 });
 
-console.log("4. Bot launch kora hocche...");
+console.log("4. Hosting Bot launch kora hocche...");
 
 bot.launch().then(() => {
-  console.log('✅ Bot is running perfectly!');
+  console.log('✅ Hosting Bot is running perfectly!');
 }).catch((err) => {
   console.log("❌ Launch Error hoyeche! Karon:", err.message);
   process.exit(1);
