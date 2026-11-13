@@ -3,7 +3,7 @@ console.log("1. Advanced Hosting Bot started...");
 const { Telegraf, Markup } = require('telegraf');
 const fs = require('fs');
 const path = require('path');
-const { exec } = require('child_process');
+const { exec, spawn } = require('child_process'); // spawn যুক্ত করা হলো
 const http = require('http');
 
 // ==========================================
@@ -16,7 +16,7 @@ const ADMIN_ID = "5428249457";
 const BOTS_DIR = path.join(__dirname, 'my_bots');
 if (!fs.existsSync(BOTS_DIR)) fs.mkdirSync(BOTS_DIR);
 
-// Track running bots in memory
+// Track running bots (Stores PID)
 const runningBots = new Map(); 
 
 // --- Render Port Error Fix ---
@@ -28,7 +28,7 @@ http.createServer((req, res) => {
 
 const bot = new Telegraf(BOT_TOKEN);
 
-// 🎨 Pro Level Tile UI (All English)
+// 🎨 Pro Level Tile UI
 const getMainMenu = () => {
   return Markup.inlineKeyboard([
     [Markup.button.callback('📁 Files & Stats', 'stats'), Markup.button.callback('🚀 Upload New Bot', 'upload_prompt')],
@@ -132,9 +132,13 @@ bot.action(/^delete_(.+)$/, (ctx) => {
   const fileName = ctx.match[1];
   const filePath = path.join(BOTS_DIR, fileName);
   
+  // Stop if running before deleting
   if (runningBots.has(fileName)) {
-    const child = runningBots.get(fileName);
-    child.kill();
+    const pid = runningBots.get(fileName);
+    try {
+      if (process.platform === 'win32') exec(`taskkill /pid ${pid} /T /F`);
+      else process.kill(-pid, 'SIGKILL');
+    } catch (e) { console.log(e.message); }
     runningBots.delete(fileName);
   }
   
@@ -185,8 +189,9 @@ bot.action(/^start_(.+)$/, async (ctx) => {
       cmd = `node "${filePath}"`;
     }
 
-    const child = exec(cmd, { maxBuffer: 1024 * 1024 * 10 });
-    runningBots.set(fileName, child);
+    // spawn with detached: true to kill process tree later
+    const child = spawn(cmd, { shell: true, detached: true });
+    runningBots.set(fileName, child.pid);
 
     child.on('exit', (code) => {
       runningBots.delete(fileName);
@@ -203,14 +208,25 @@ bot.action(/^start_(.+)$/, async (ctx) => {
   }
 });
 
-// 🛑 Stop Bot
+// 🛑 Stop Bot (100% Fixed)
 bot.action(/^stop_(.+)$/, (ctx) => {
   if (ctx.from.id.toString() !== ADMIN_ID.toString()) return ctx.answerCbQuery("Access Denied!");
   const fileName = ctx.match[1];
   
   if (runningBots.has(fileName)) {
-    const child = runningBots.get(fileName);
-    child.kill();
+    const pid = runningBots.get(fileName);
+    
+    try {
+      // Kill the entire process tree
+      if (process.platform === 'win32') {
+        exec(`taskkill /pid ${pid} /T /F`);
+      } else {
+        process.kill(-pid, 'SIGKILL'); // Render/Linux process group kill
+      }
+    } catch (e) {
+      console.log("Kill error:", e.message);
+    }
+
     runningBots.delete(fileName);
     ctx.answerCbQuery("Stopped!");
     ctx.editMessageText(`🛑 **Bot Stopped:** \`${fileName}\``, {
@@ -231,7 +247,7 @@ bot.action('upload_prompt', (ctx) => {
 bot.action('help', (ctx) => {
   if (ctx.from.id.toString() !== ADMIN_ID.toString()) return ctx.answerCbQuery("Access Denied!");
   ctx.answerCbQuery();
-  ctx.replyWithMarkdown("ℹ️ **Help Menu**\n\n1. Upload a `.js` file.\n2. Go to **Manage Bots**.\n3. Click **Start** to run it.\n4. The bot will be hosted in the background.\n\n*Note: Free Render servers may block YouTube or Instagram IPs.*", getBackMenu());
+  ctx.replyWithMarkdown("ℹ️ **Help Menu**\n\n1. Upload a `.js` file.\n2. Go to **Manage Bots**.\n3. Click **Start** to run it.\n4. You can **Stop** or **Delete** it anytime.\n\n*Note: Free Render servers may block YouTube or Instagram IPs.*", getBackMenu());
 });
 
 // Handle File Upload
