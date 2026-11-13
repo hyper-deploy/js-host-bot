@@ -6,7 +6,7 @@ const path = require('path');
 const { exec } = require('child_process');
 
 // ==========================================
-// ⚠️ আপনার তথ্য এখানে সেট করা হয়েছে ⚠️
+// ⚠️ আপনার তথ্য এখানে সেট করা আছে ⚠️
 // ==========================================
 const BOT_TOKEN = "9213115853:AAHVDACnqSSOFXx3iy4KXv6FGhGfxhx82jc"; 
 const ADMIN_ID = "5428249457"; 
@@ -14,7 +14,7 @@ const ADMIN_ID = "5428249457";
 
 console.log("2. Token check kora hocche...");
 
-if (BOT_TOKEN.includes("এখানে") || ADMIN_ID.includes("এখানে") || ADMIN_ID.includes("যেমন")) {
+if (BOT_TOKEN.includes("এখানে") || ADMIN_ID.includes("এখানে")) {
   console.log("❌ ERROR: Bhai apni BOT_TOKEN ba ADMIN_ID thik koren nai!");
   process.exit(1);
 }
@@ -35,7 +35,9 @@ bot.start((ctx) => {
     return ctx.reply("⛔ Ei bot ta personal. Apni admin na hole eita use korte parben na.");
   }
 
-  ctx.replyWithMarkdown(`✨ **Welcome Boss!** ✨\n\nEkhane apni apnar Node.js (`.js`) bot host korte parben.\n👇 Niche theke option select korun:`, getMainMenu());
+  const welcomeMsg = "✨ **Welcome Boss!** ✨\n\nEkhane apni apnar Node.js (`.js`) bot host korte parben.\n👇 Niche theke option select korun:";
+  
+  ctx.replyWithMarkdown(welcomeMsg, getMainMenu());
 });
 
 bot.action('host_new', (ctx) => {
