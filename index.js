@@ -76,7 +76,6 @@ bot.on('document', async (ctx) => {
   try {
     ctx.reply(`⏳ File download hocche: \`${fileName}\`...`, { parse_mode: 'Markdown' });
     
-    // ১. ফাইল ডাউনলোড করা
     const fileLink = await ctx.telegram.getFileLink(fileId);
     const response = await fetch(fileLink.href);
     const arrayBuffer = await response.arrayBuffer();
@@ -84,7 +83,6 @@ bot.on('document', async (ctx) => {
 
     ctx.reply("✅ File download shesh! Ekhon library check kora hocche...");
 
-    // ২. ফাইলের ভেতরের require() গুলো খুঁজে বের করা
     const fileContent = fs.readFileSync(filePath, 'utf8');
     const requireRegex = /require\(['"]([^'"]+)['"]\)/g;
     let match;
@@ -92,19 +90,22 @@ bot.on('document', async (ctx) => {
 
     while ((match = requireRegex.exec(fileContent)) !== null) {
       let pkg = match[1];
-      // লোকাল ফাইল বা node এর বিল্ট-ইন মডিউল বাদ দেওয়া
       if (!pkg.startsWith('.') && !pkg.startsWith('/') && !['fs', 'path', 'http', 'https', 'crypto', 'child_process'].includes(pkg)) {
-        // স্কোপড প্যাকেজ (যেমন @distube/ytdl-core) ঠিকভাবে নেওয়া
         if (pkg.startsWith('@')) {
           pkg = pkg.split('/').slice(0, 2).join('/');
         } else {
           pkg = pkg.split('/')[0];
         }
+        
+        // ⚠️ এখানে লাইব্রেরির পুরনো ভার্সন ফিক্স করে দেওয়া হলো
+        if (pkg === 'node-telegram-bot-api') {
+          pkg = 'node-telegram-bot-api@0.66.0';
+        }
+        
         packages.add(pkg);
       }
     }
 
-    // ৩. প্রয়োজনীয় প্যাকেজ ইনস্টল করা
     const packagesToInstall = Array.from(packages).join(' ');
     let installCmd = '';
     
@@ -115,30 +116,26 @@ bot.on('document', async (ctx) => {
       ctx.reply("✅ Kono notun package lagbe na. Ekhon bot chalu korchi...");
     }
 
-    // ৪. বট রান করা
     const runCmd = `${installCmd}node "${filePath}"`;
-    const child = exec(runCmd, { maxBuffer: 1024 * 1024 * 10 }); // ১০MB বাফার
+    const child = exec(runCmd, { maxBuffer: 1024 * 1024 * 10 });
 
     let output = "";
     child.stdout.on('data', (data) => { output += data; });
     child.stderr.on('data', (data) => { output += data; });
 
-    // ১৫ সেকেন্ড অপেক্ষা করা (ইনস্টল এবং রান হওয়ার জন্য)
     setTimeout(() => {
       if (child.exitCode === null) {
         ctx.replyWithMarkdown(`🎉 **Bot Successfully Run Hoyechhe!**\n\n\`\`\`\n${output.substring(0, 500) || "Bot is running in background..."}\n\`\`\``);
       } else {
         ctx.replyWithMarkdown(`❌ **Bot Crash Koreche!**\n\nError Log:\n\`\`\`\n${output.substring(0, 1000)}\n\`\`\``);
       }
-    }, 15000);
+    }, 20000); // ২০ সেকেন্ড অপেক্ষা করবে
 
   } catch (error) {
     console.error("File Error:", error);
     ctx.reply("❌ File download ba run korte problem hoyeche.");
   }
 });
-
-console.log("4. Hosting Bot launch kora hocche...");
 
 bot.launch().then(() => {
   console.log('✅ Hosting Bot is running perfectly!');
