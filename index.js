@@ -6,16 +6,16 @@ const path = require('path');
 const { exec } = require('child_process');
 
 // ==========================================
-// ⚠️ এখানে আপনার তথ্য দিন ⚠️
+// ⚠️ আপনার তথ্য এখানে সেট করা হয়েছে ⚠️
 // ==========================================
 const BOT_TOKEN = "9213115853:AAHVDACnqSSOFXx3iy4KXv6FGhGfxhx82jc"; 
-const ADMIN_ID = "এখানে আপনার টেলিগ্রাম আইডি দিন (যেমন: 5428249457)"; 
+const ADMIN_ID = "5428249457"; 
 // ==========================================
 
 console.log("2. Token check kora hocche...");
 
-if (BOT_TOKEN.includes("এখানে") || ADMIN_ID.includes("এখানে")) {
-  console.log("❌ ERROR: Bhai apni BOT_TOKEN ba ADMIN_ID er jaygay kichu likhen nai! Puro token ta copy-paste korun.");
+if (BOT_TOKEN.includes("এখানে") || ADMIN_ID.includes("এখানে") || ADMIN_ID.includes("যেমন")) {
+  console.log("❌ ERROR: Bhai apni BOT_TOKEN ba ADMIN_ID thik koren nai!");
   process.exit(1);
 }
 
