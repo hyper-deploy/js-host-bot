@@ -9,7 +9,7 @@ const http = require('http');
 // ==========================================
 // ⚠️ YOUR DETAILS HERE ⚠️
 // ==========================================
-const BOT_TOKEN = "9213115853:AAHVDACnqSSOFXx3iy4KXv6FGhGfxhx82jc"; 
+const BOT_TOKEN = "9213115853:AAGx20bgT60S-FVSZvc-1FJM5tYbBXy5SG0"; 
 const ADMIN_ID = "5428249457"; 
 // ==========================================
 
